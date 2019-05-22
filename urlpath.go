@@ -1,3 +1,9 @@
+// Package urlpath matches paths against a template. It's meant for applications
+// that take in REST-like URL paths, and need to validate and extract data from
+// those paths.
+//
+// See New for documentation of the syntax for creating paths. See Match for how
+// to validate and parse an inputted path.
 package urlpath
 
 import "strings"
