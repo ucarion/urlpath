@@ -177,3 +177,42 @@ func (p *Path) Match(s string) (Match, bool) {
 
 	return Match{Params: params, Trailing: s}, true
 }
+
+// Build is the inverse of Match. Given parameter and trailing segment
+// information, Build returns a string which satifies this information.
+//
+// The second parameter indicates whether the inputted match has the parameters
+// the path specifies. If any of the parameters in the path are not found in the
+// provided Match's Params, then false is returned.
+func (p *Path) Build(m Match) (string, bool) {
+	var s strings.Builder
+	for i, segment := range p.Segments {
+		if segment.IsParam {
+			if param, ok := m.Params[segment.Param]; ok {
+				s.WriteString(param)
+			} else {
+				return "", false
+			}
+		} else {
+			s.WriteString(segment.Const)
+		}
+
+		if i != len(p.Segments)-1 {
+			s.WriteRune('/')
+		}
+	}
+
+	// The trailing segment of a match does not include a leading slash. We
+	// therefore need to add it here.
+	//
+	// However, if there are no segments at all in the path, then in this special
+	// case the match's Trailing is simply the originally inputted string itself,
+	// and so no leading slash must be inserted.
+	if p.Trailing && len(p.Segments) > 0 {
+		s.WriteRune('/')
+	}
+
+	s.WriteString(m.Trailing)
+
+	return s.String(), true
+}

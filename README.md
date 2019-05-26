@@ -1,8 +1,8 @@
 # urlpath [![GoDoc Badge][badge]][godoc]
 
-`urlpath` is a Golang library for matching paths against a template. It's meant
-for applications that take in REST-like URL paths, and need to validate and
-extract data from those paths.
+`urlpath` is a Golang library for matching paths against a template, or
+constructing paths using a template. It's meant for applications that take in
+REST-like URL paths, and need to validate and extract data from those paths.
 
 [badge]: https://godoc.org/github.com/ucarion/urlpath?status.svg
 [godoc]: https://godoc.org/github.com/ucarion/urlpath
@@ -49,6 +49,23 @@ fmt.Println(match.Params["user"])   // ucarion
 fmt.Println(match.Params["repo"])   // urlpath
 fmt.Println(match.Params["branch"]) // master
 fmt.Println(match.Trailing)         // src/foo/bar/baz.go
+```
+
+Additionally, you can call `Build` to construct a path from a template:
+
+```go
+path := urlpath.New("/:user/:repo/blob/:branch/*")
+
+res, ok := path.Build(urlpath.Match{
+  Params: map[string]string{
+    "user": "ucarion",
+    "repo": "urlpath",
+    "branch": "master",
+  },
+  Trailing: "src/foo/bar/baz.go",
+})
+
+fmt.Println(res) // /ucarion/urlpath/blob/master/src/foo/bar/baz.go
 ```
 
 ## How it works

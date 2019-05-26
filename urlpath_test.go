@@ -354,6 +354,18 @@ func TestMatch(t *testing.T) {
 			if ok != tt.ok {
 				t.Errorf("ok %#v, want %#v", ok, tt.ok)
 			}
+
+			// If no error was expected when matching the data, then we should be able
+			// to round-trip back to the original data using Build.
+			if tt.ok {
+				if in, ok := path.Build(out); ok {
+					if in != tt.in {
+						t.Errorf("in %#v, want %#v", in, tt.in)
+					}
+				} else {
+					t.Error("Build returned ok = false")
+				}
+			}
 		})
 	}
 }
