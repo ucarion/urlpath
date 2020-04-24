@@ -85,3 +85,36 @@ in the input is treated as either:
   segment -- otherwise, it's just a usual exact-match segment. Any leftover data
   in the input, after all previous segments were satisfied, goes into `Trailing`
   in the outputted `Match`.
+
+## Performance
+
+Although performance wasn't the top priority for this library, `urlpath` does
+typically perform better than an equivalent regular expression. In other words,
+this:
+
+```go
+path := urlpath.New("/test/:foo/bar/:baz")
+matches := path.Match(...)
+```
+
+Will usually perform better than this:
+
+```go
+r := regexp.MustCompile("/test/(?P<foo>[^/]+)/bar/(?P<baz>[^/]+)")
+matches := r.FindStringSubmatch(...)
+```
+
+The results of `go test -benchmem -bench .`:
+
+```text
+goos: darwin
+goarch: amd64
+pkg: github.com/ucarion/urlpath
+BenchmarkMatch/without_trailing_segments/urlpath-8 	 1436247	       819 ns/op	     784 B/op	      10 allocs/op
+BenchmarkMatch/without_trailing_segments/regex-8   	  693924	      1816 ns/op	     338 B/op	      10 allocs/op
+BenchmarkMatch/with_trailing_segments/urlpath-8    	 1454750	       818 ns/op	     784 B/op	      10 allocs/op
+BenchmarkMatch/with_trailing_segments/regex-8      	  592644	      2365 ns/op	     225 B/op	       8 allocs/op
+```
+
+Do your own benchmarking if performance matters a lot to you. See
+`BenchmarkMatch` in `urlpath_test.go` for the code that gives these results.
