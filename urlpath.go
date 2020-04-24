@@ -15,7 +15,7 @@ type Path struct {
 	// A sequence of constraints on what valid segments must look like.
 	Segments []Segment
 
-	// Whether additiona, trailing segments after Segments are acceptable.
+	// Whether additional, trailing segments after Segments are acceptable.
 	Trailing bool
 }
 

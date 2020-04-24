@@ -1,86 +1,129 @@
-package urlpath
+package urlpath_test
 
 import (
 	"fmt"
 	"reflect"
 	"regexp"
 	"testing"
+
+	"github.com/ucarion/urlpath"
 )
+
+func ExampleNew() {
+	path := urlpath.New("users/:id/files/*")
+	fmt.Println(path.Segments[0].Const)
+	fmt.Println(path.Segments[1].Param)
+	fmt.Println(path.Segments[2].Const)
+	fmt.Println(path.Trailing)
+	// Output:
+	//
+	// users
+	// id
+	// files
+	// true
+}
+
+func ExampleMatch() {
+	path := urlpath.New("users/:id/files/*")
+	match, ok := path.Match("users/123/files/foo/bar/baz.txt")
+	fmt.Println(ok)
+	fmt.Println(match.Params)
+	fmt.Println(match.Trailing)
+	// Output:
+	//
+	// true
+	// map[id:123]
+	// foo/bar/baz.txt
+}
+
+func ExamplePath_Build() {
+	path := urlpath.New("users/:id/files/*")
+	built, ok := path.Build(urlpath.Match{
+		Params:   map[string]string{"id": "123"},
+		Trailing: "foo/bar/baz.txt",
+	})
+	fmt.Println(ok)
+	fmt.Println(built)
+	// Output:
+	//
+	// true
+	// users/123/files/foo/bar/baz.txt
+}
 
 func TestNew(t *testing.T) {
 	testCases := []struct {
 		in  string
-		out Path
+		out urlpath.Path
 	}{
 		{
 			"foo",
-			Path{Segments: []Segment{
-				Segment{Const: "foo"},
+			urlpath.Path{Segments: []urlpath.Segment{
+				urlpath.Segment{Const: "foo"},
 			}},
 		},
 
 		{
 			"/foo",
-			Path{Segments: []Segment{
-				Segment{Const: ""},
-				Segment{Const: "foo"},
+			urlpath.Path{Segments: []urlpath.Segment{
+				urlpath.Segment{Const: ""},
+				urlpath.Segment{Const: "foo"},
 			}},
 		},
 
 		{
 			":foo",
-			Path{Segments: []Segment{
-				Segment{IsParam: true, Param: "foo"},
+			urlpath.Path{Segments: []urlpath.Segment{
+				urlpath.Segment{IsParam: true, Param: "foo"},
 			}},
 		},
 
 		{
 			"/:foo",
-			Path{Segments: []Segment{
-				Segment{Const: ""},
-				Segment{IsParam: true, Param: "foo"},
+			urlpath.Path{Segments: []urlpath.Segment{
+				urlpath.Segment{Const: ""},
+				urlpath.Segment{IsParam: true, Param: "foo"},
 			}},
 		},
 
 		{
 			"foo/:bar",
-			Path{Segments: []Segment{
-				Segment{Const: "foo"},
-				Segment{IsParam: true, Param: "bar"},
+			urlpath.Path{Segments: []urlpath.Segment{
+				urlpath.Segment{Const: "foo"},
+				urlpath.Segment{IsParam: true, Param: "bar"},
 			}},
 		},
 
 		{
 			"foo/:foo/bar/:bar",
-			Path{Segments: []Segment{
-				Segment{Const: "foo"},
-				Segment{IsParam: true, Param: "foo"},
-				Segment{Const: "bar"},
-				Segment{IsParam: true, Param: "bar"},
+			urlpath.Path{Segments: []urlpath.Segment{
+				urlpath.Segment{Const: "foo"},
+				urlpath.Segment{IsParam: true, Param: "foo"},
+				urlpath.Segment{Const: "bar"},
+				urlpath.Segment{IsParam: true, Param: "bar"},
 			}},
 		},
 
 		{
 			"foo/:bar/:baz/*",
-			Path{Trailing: true, Segments: []Segment{
-				Segment{Const: "foo"},
-				Segment{IsParam: true, Param: "bar"},
-				Segment{IsParam: true, Param: "baz"},
+			urlpath.Path{Trailing: true, Segments: []urlpath.Segment{
+				urlpath.Segment{Const: "foo"},
+				urlpath.Segment{IsParam: true, Param: "bar"},
+				urlpath.Segment{IsParam: true, Param: "baz"},
 			}},
 		},
 
 		{
 			"/:/*",
-			Path{Trailing: true, Segments: []Segment{
-				Segment{Const: ""},
-				Segment{IsParam: true, Param: ""},
+			urlpath.Path{Trailing: true, Segments: []urlpath.Segment{
+				urlpath.Segment{Const: ""},
+				urlpath.Segment{IsParam: true, Param: ""},
 			}},
 		},
 	}
 
 	for _, tt := range testCases {
 		t.Run(tt.in, func(t *testing.T) {
-			out := New(tt.in)
+			out := urlpath.New(tt.in)
 
 			if !reflect.DeepEqual(out, tt.out) {
 				t.Errorf("out %#v, want %#v", out, tt.out)
@@ -91,162 +134,162 @@ func TestNew(t *testing.T) {
 
 func TestMatch(t *testing.T) {
 	testCases := []struct {
-		path string
+		Path string
 		in   string
-		out  Match
+		out  urlpath.Match
 		ok   bool
 	}{
 		{
 			"foo",
 			"foo",
-			Match{Params: map[string]string{}, Trailing: ""},
+			urlpath.Match{Params: map[string]string{}, Trailing: ""},
 			true,
 		},
 
 		{
 			"foo",
 			"bar",
-			Match{},
+			urlpath.Match{},
 			false,
 		},
 
 		{
 			":foo",
 			"bar",
-			Match{Params: map[string]string{"foo": "bar"}, Trailing: ""},
+			urlpath.Match{Params: map[string]string{"foo": "bar"}, Trailing: ""},
 			true,
 		},
 
 		{
 			"/:foo",
 			"/bar",
-			Match{Params: map[string]string{"foo": "bar"}, Trailing: ""},
+			urlpath.Match{Params: map[string]string{"foo": "bar"}, Trailing: ""},
 			true,
 		},
 
 		{
 			"/:foo/bar/:baz",
 			"/foo/bar/baz",
-			Match{Params: map[string]string{"foo": "foo", "baz": "baz"}, Trailing: ""},
+			urlpath.Match{Params: map[string]string{"foo": "foo", "baz": "baz"}, Trailing: ""},
 			true,
 		},
 
 		{
 			"/:foo/bar/:baz",
 			"/foo/bax/baz",
-			Match{},
+			urlpath.Match{},
 			false,
 		},
 
 		{
 			"/:foo/:bar/:baz",
 			"/foo/bar/baz",
-			Match{Params: map[string]string{"foo": "foo", "bar": "bar", "baz": "baz"}, Trailing: ""},
+			urlpath.Match{Params: map[string]string{"foo": "foo", "bar": "bar", "baz": "baz"}, Trailing: ""},
 			true,
 		},
 
 		{
 			"/:foo/:bar/:baz",
 			"///",
-			Match{Params: map[string]string{"foo": "", "bar": "", "baz": ""}, Trailing: ""},
+			urlpath.Match{Params: map[string]string{"foo": "", "bar": "", "baz": ""}, Trailing: ""},
 			true,
 		},
 
 		{
 			"/:foo/:bar/:baz",
 			"",
-			Match{},
+			urlpath.Match{},
 			false,
 		},
 
 		{
 			"/:foo/bar/:baz",
 			"/foo/bax/baz/a/b/c",
-			Match{},
+			urlpath.Match{},
 			false,
 		},
 
 		{
 			"/:foo/bar/:baz",
 			"/foo/bax/baz/",
-			Match{},
+			urlpath.Match{},
 			false,
 		},
 
 		{
 			"/:foo/bar/:baz/*",
 			"/foo/bar/baz/a/b/c",
-			Match{Params: map[string]string{"foo": "foo", "baz": "baz"}, Trailing: "a/b/c"},
+			urlpath.Match{Params: map[string]string{"foo": "foo", "baz": "baz"}, Trailing: "a/b/c"},
 			true,
 		},
 
 		{
 			"/:foo/bar/:baz/*",
 			"/foo/bar/baz/",
-			Match{Params: map[string]string{"foo": "foo", "baz": "baz"}, Trailing: ""},
+			urlpath.Match{Params: map[string]string{"foo": "foo", "baz": "baz"}, Trailing: ""},
 			true,
 		},
 
 		{
 			"/:foo/bar/:baz/*",
 			"/foo/bar/baz",
-			Match{},
+			urlpath.Match{},
 			false,
 		},
 
 		{
 			"/:foo/:bar/:baz/*",
 			"////",
-			Match{Params: map[string]string{"foo": "", "bar": "", "baz": ""}, Trailing: ""},
+			urlpath.Match{Params: map[string]string{"foo": "", "bar": "", "baz": ""}, Trailing: ""},
 			true,
 		},
 
 		{
 			"/:foo/:bar/:baz/*",
 			"/////",
-			Match{Params: map[string]string{"foo": "", "bar": "", "baz": ""}, Trailing: "/"},
+			urlpath.Match{Params: map[string]string{"foo": "", "bar": "", "baz": ""}, Trailing: "/"},
 			true,
 		},
 
 		{
 			"*",
 			"",
-			Match{Params: map[string]string{}, Trailing: ""},
+			urlpath.Match{Params: map[string]string{}, Trailing: ""},
 			true,
 		},
 
 		{
 			"/*",
 			"",
-			Match{},
+			urlpath.Match{},
 			false,
 		},
 
 		{
 			"*",
 			"/",
-			Match{Params: map[string]string{}, Trailing: "/"},
+			urlpath.Match{Params: map[string]string{}, Trailing: "/"},
 			true,
 		},
 
 		{
 			"/*",
 			"/",
-			Match{Params: map[string]string{}, Trailing: ""},
+			urlpath.Match{Params: map[string]string{}, Trailing: ""},
 			true,
 		},
 
 		{
 			"*",
 			"/a/b/c",
-			Match{Params: map[string]string{}, Trailing: "/a/b/c"},
+			urlpath.Match{Params: map[string]string{}, Trailing: "/a/b/c"},
 			true,
 		},
 
 		{
 			"*",
 			"a/b/c",
-			Match{Params: map[string]string{}, Trailing: "a/b/c"},
+			urlpath.Match{Params: map[string]string{}, Trailing: "a/b/c"},
 			true,
 		},
 
@@ -254,98 +297,98 @@ func TestMatch(t *testing.T) {
 		{
 			"/shelves/:shelf/books/:book",
 			"/shelves/foo/books/bar",
-			Match{Params: map[string]string{"shelf": "foo", "book": "bar"}},
+			urlpath.Match{Params: map[string]string{"shelf": "foo", "book": "bar"}},
 			true,
 		},
 		{
 			"/shelves/:shelf/books/:book",
 			"/shelves/123/books/456",
-			Match{Params: map[string]string{"shelf": "123", "book": "456"}},
+			urlpath.Match{Params: map[string]string{"shelf": "123", "book": "456"}},
 			true,
 		},
 		{
 			"/shelves/:shelf/books/:book",
 			"/shelves/123/books/",
-			Match{Params: map[string]string{"shelf": "123", "book": ""}},
+			urlpath.Match{Params: map[string]string{"shelf": "123", "book": ""}},
 			true,
 		},
 		{
 			"/shelves/:shelf/books/:book",
 			"/shelves//books/456",
-			Match{Params: map[string]string{"shelf": "", "book": "456"}},
+			urlpath.Match{Params: map[string]string{"shelf": "", "book": "456"}},
 			true,
 		},
 		{
 			"/shelves/:shelf/books/:book",
 			"/shelves//books/",
-			Match{Params: map[string]string{"shelf": "", "book": ""}},
+			urlpath.Match{Params: map[string]string{"shelf": "", "book": ""}},
 			true,
 		},
 		{
 			"/shelves/:shelf/books/:book",
 			"/shelves/foo/books",
-			Match{},
+			urlpath.Match{},
 			false,
 		},
 		{
 			"/shelves/:shelf/books/:book",
 			"/shelves/foo/books/bar/",
-			Match{},
+			urlpath.Match{},
 			false,
 		},
 		{
 			"/shelves/:shelf/books/:book",
 			"/shelves/foo/books/pages/baz",
-			Match{},
+			urlpath.Match{},
 			false,
 		},
 		{
 			"/shelves/:shelf/books/:book",
 			"/SHELVES/foo/books/bar",
-			Match{},
+			urlpath.Match{},
 			false,
 		},
 		{
 			"/shelves/:shelf/books/:book",
 			"shelves/foo/books/bar",
-			Match{},
+			urlpath.Match{},
 			false,
 		},
 		{
 			"/users/:user/files/*",
 			"/users/foo/files/",
-			Match{Params: map[string]string{"user": "foo"}, Trailing: ""},
+			urlpath.Match{Params: map[string]string{"user": "foo"}, Trailing: ""},
 			true,
 		},
 		{
 			"/users/:user/files/*",
 			"/users/foo/files/foo/bar/baz.txt",
-			Match{Params: map[string]string{"user": "foo"}, Trailing: "foo/bar/baz.txt"},
+			urlpath.Match{Params: map[string]string{"user": "foo"}, Trailing: "foo/bar/baz.txt"},
 			true,
 		},
 		{
 			"/users/:user/files/*",
 			"/users/foo/files////",
-			Match{Params: map[string]string{"user": "foo"}, Trailing: "///"},
+			urlpath.Match{Params: map[string]string{"user": "foo"}, Trailing: "///"},
 			true,
 		},
 		{
 			"/users/:user/files/*",
 			"/users/foo",
-			Match{},
+			urlpath.Match{},
 			false,
 		},
 		{
 			"/users/:user/files/*",
 			"/users/foo/files",
-			Match{},
+			urlpath.Match{},
 			false,
 		},
 	}
 
 	for _, tt := range testCases {
-		t.Run(fmt.Sprintf("%s/%s", tt.path, tt.in), func(t *testing.T) {
-			path := New(tt.path)
+		t.Run(fmt.Sprintf("%s/%s", tt.Path, tt.in), func(t *testing.T) {
+			path := urlpath.New(tt.Path)
 			out, ok := path.Match(tt.in)
 
 			if !reflect.DeepEqual(out, tt.out) {
@@ -374,7 +417,7 @@ func TestMatch(t *testing.T) {
 func BenchmarkMatch(b *testing.B) {
 	b.Run("without trailing segments", func(b *testing.B) {
 		b.Run("urlpath", func(b *testing.B) {
-			path := New("/test/:foo/bar/:baz")
+			path := urlpath.New("/test/:foo/bar/:baz")
 			b.ResetTimer()
 
 			for i := 0; i < b.N; i++ {
@@ -396,7 +439,7 @@ func BenchmarkMatch(b *testing.B) {
 
 	b.Run("with trailing segments", func(b *testing.B) {
 		b.Run("urlpath", func(b *testing.B) {
-			path := New("/test/:foo/bar/:baz/*")
+			path := urlpath.New("/test/:foo/bar/:baz/*")
 			b.ResetTimer()
 
 			for i := 0; i < b.N; i++ {
