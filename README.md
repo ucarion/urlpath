@@ -1,4 +1,4 @@
-# urlpath [![GoDoc Badge][badge]][godoc]
+# urlpath [![GoDoc Badge][badge]][godoc] [![CI Badge][ci-badge]][ci-url]
 
 `urlpath` is a Golang library for matching paths against a template, or
 constructing paths using a template. It's meant for applications that take in
@@ -6,6 +6,8 @@ REST-like URL paths, and need to validate and extract data from those paths.
 
 [badge]: https://godoc.org/github.com/ucarion/urlpath?status.svg
 [godoc]: https://godoc.org/github.com/ucarion/urlpath
+[ci-badge]: https://github.com/ucarion/urlpath/workflows/.github/workflows/test.yml/badge.svg
+[ci-url]: https://github.com/ucarion/urlpath/actions
 
 This is easiest explained with an example:
 
