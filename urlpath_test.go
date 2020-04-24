@@ -3,6 +3,7 @@ package urlpath
 import (
 	"fmt"
 	"reflect"
+	"regexp"
 	"testing"
 )
 
@@ -368,4 +369,50 @@ func TestMatch(t *testing.T) {
 			}
 		})
 	}
+}
+
+func BenchmarkMatch(b *testing.B) {
+	b.Run("without trailing segments", func(b *testing.B) {
+		b.Run("urlpath", func(b *testing.B) {
+			path := New("/test/:foo/bar/:baz")
+			b.ResetTimer()
+
+			for i := 0; i < b.N; i++ {
+				path.Match(fmt.Sprintf("/test/foo%d/bar/baz%d", i, i))
+				path.Match(fmt.Sprintf("/test/foo%d/bar/baz%d/extra", i, i))
+			}
+		})
+
+		b.Run("regex", func(b *testing.B) {
+			regex := regexp.MustCompile("/test/(?P<foo>[^/]+)/bar/(?P<baz>[^/]+)")
+			b.ResetTimer()
+
+			for i := 0; i < b.N; i++ {
+				regex.FindStringSubmatch(fmt.Sprintf("/test/foo%d/bar/baz%d", i, i))
+				regex.FindStringSubmatch(fmt.Sprintf("/test/foo%d/bar/baz%d/extra", i, i))
+			}
+		})
+	})
+
+	b.Run("with trailing segments", func(b *testing.B) {
+		b.Run("urlpath", func(b *testing.B) {
+			path := New("/test/:foo/bar/:baz/*")
+			b.ResetTimer()
+
+			for i := 0; i < b.N; i++ {
+				path.Match(fmt.Sprintf("/test/foo%d/bar/baz%d", i, i))
+				path.Match(fmt.Sprintf("/test/foo%d/bar/baz%d/extra", i, i))
+			}
+		})
+
+		b.Run("regex", func(b *testing.B) {
+			regex := regexp.MustCompile("/test/(?P<foo>[^/]+)/bar/(?P<baz>[^/]+)/.*")
+			b.ResetTimer()
+
+			for i := 0; i < b.N; i++ {
+				regex.FindStringSubmatch(fmt.Sprintf("/test/foo%d/bar/baz%d", i, i))
+				regex.FindStringSubmatch(fmt.Sprintf("/test/foo%d/bar/baz%d/extra", i, i))
+			}
+		})
+	})
 }
