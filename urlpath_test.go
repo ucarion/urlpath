@@ -9,6 +9,47 @@ import (
 	"github.com/ucarion/urlpath"
 )
 
+func ExampleNew() {
+	path := urlpath.New("users/:id/files/*")
+	fmt.Println(path.Segments[0].Const)
+	fmt.Println(path.Segments[1].Param)
+	fmt.Println(path.Segments[2].Const)
+	fmt.Println(path.Trailing)
+	// Output:
+	//
+	// users
+	// id
+	// files
+	// true
+}
+
+func ExampleMatch() {
+	path := urlpath.New("users/:id/files/*")
+	match, ok := path.Match("users/123/files/foo/bar/baz.txt")
+	fmt.Println(ok)
+	fmt.Println(match.Params)
+	fmt.Println(match.Trailing)
+	// Output:
+	//
+	// true
+	// map[id:123]
+	// foo/bar/baz.txt
+}
+
+func ExamplePath_Build() {
+	path := urlpath.New("users/:id/files/*")
+	built, ok := path.Build(urlpath.Match{
+		Params:   map[string]string{"id": "123"},
+		Trailing: "foo/bar/baz.txt",
+	})
+	fmt.Println(ok)
+	fmt.Println(built)
+	// Output:
+	//
+	// true
+	// users/123/files/foo/bar/baz.txt
+}
+
 func TestNew(t *testing.T) {
 	testCases := []struct {
 		in  string
